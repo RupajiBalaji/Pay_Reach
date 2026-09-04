@@ -460,6 +460,17 @@ export function getAuditLogByRequestId(requestId: string): AuditEvent[] {
     .sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
 }
 
+export function getRecentAttemptsForBank(ifscPrefix: string, limit: number = 10): RailAttempt[] {
+  const db = ensureDb();
+  const upper = ifscPrefix.toUpperCase();
+  const matchingRequestIds = new Set(
+    db.requests.filter((r) => r.ifsc.startsWith(upper)).map((r) => r.id)
+  );
+  return db.attempts
+    .filter((a) => matchingRequestIds.has(a.request_id))
+    .slice(-limit);
+}
+
 // Reset / Re-seed
 export function resetDatabase(): void {
   const data: DbSchema = {

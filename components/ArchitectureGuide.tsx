@@ -86,6 +86,18 @@ export function ArchitectureGuide() {
                 </td>
               </tr>
               <tr className="hover:bg-slate-850/40">
+                <td className="py-3 px-4 font-semibold text-white">AI Decision Engine (Anthropic Claude)</td>
+                <td className="py-3 px-4">
+                  <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
+                    REAL INTEGRATION
+                  </span>
+                </td>
+                <td className="py-3 px-4 font-mono text-slate-400">/lib/ai-reasoner.ts</td>
+                <td className="py-3 px-4 text-slate-300">
+                  Calls Anthropic Claude API (<code className="text-blue-400">claude-sonnet-4-6</code>) for per-bank rail ranking and reasoning, with deterministic fallback if the API is unavailable.
+                </td>
+              </tr>
+              <tr className="hover:bg-slate-850/40">
                 <td className="py-3 px-4 font-semibold text-white">Aadhaar-OTP UPI Activation</td>
                 <td className="py-3 px-4">
                   <span className="px-2 py-0.5 rounded text-[10px] font-medium bg-purple-500/15 text-purple-400 border border-purple-500/30">
@@ -122,15 +134,15 @@ export function ArchitectureGuide() {
                 </td>
               </tr>
               <tr className="hover:bg-slate-850/40">
-                <td className="py-3 px-4 font-semibold text-white">AI Decision Engine & Risk Model</td>
+                <td className="py-3 px-4 font-semibold text-white">Adaptive Learning Engine</td>
                 <td className="py-3 px-4">
                   <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-blue-500/15 text-blue-400 border border-blue-500/30">
                     LIVE LOGIC
                   </span>
                 </td>
-                <td className="py-3 px-4 font-mono text-slate-400">/lib/decision-engine.ts</td>
+                <td className="py-3 px-4 font-mono text-slate-400">/lib/orchestrator.ts</td>
                 <td className="py-3 px-4 text-slate-300">
-                  Reads real persisted bank profiles, ranks rails dynamically, and updates via Bayesian learning.
+                  Updates stored bank confidence scores after every transaction using a Bayesian-weighted moving average.
                 </td>
               </tr>
             </tbody>

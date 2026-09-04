@@ -1,5 +1,6 @@
 import { BankRiskProfile, RailMethod, RailRanking } from "./types";
-import { getBankProfile } from "./db";
+import { getBankProfile, getRecentAttemptsForBank } from "./db";
+import { reasonAboutRails } from "./ai-reasoner";
 
 export interface RequestContext {
   accountNumber: string;
@@ -8,11 +9,14 @@ export interface RequestContext {
   amount: number;
 }
 
-export function rankCollectionMethods(
+/**
+ * Deterministic fallback scoring algorithm based on stored bank risk metrics.
+ * Used whenever ANTHROPIC_API_KEY is unset or the LLM call times out/fails.
+ */
+export function rankCollectionMethodsDeterministic(
   bankProfile: BankRiskProfile | undefined,
   context: RequestContext
 ): RailRanking[] {
-  // Default fallback profile if bank is not pre-seeded
   const profile: BankRiskProfile = bankProfile || {
     ifsc_prefix: context.ifsc.substring(0, 4).toUpperCase(),
     bank_name: `${context.ifsc.substring(0, 4).toUpperCase()} Bank`,
@@ -42,6 +46,7 @@ export function rankCollectionMethods(
       is_real: false,
       risk_level: aadhaarScore >= 75 ? "LOW" : "MODERATE",
       reason: `Aadhaar-OTP UPI onboarding supported at ${profile.bank_name} (${aadhaarScore}% success). Bypasses debit card requirement and avoids QR payment rejection entirely.`,
+      engine_source: "rule_based",
     });
   } else {
     rankings.push({
@@ -53,6 +58,7 @@ export function rankCollectionMethods(
       risk_level: "HIGH",
       reason: `Aadhaar-OTP UPI onboarding is not yet enabled on NPCI rails for ${profile.bank_name}.`,
       warning: "Bank rail currently disabled on NPCI directory.",
+      engine_source: "rule_based",
     });
   }
 
@@ -66,6 +72,7 @@ export function rankCollectionMethods(
     is_real: true,
     risk_level: "LOW",
     reason: `Universal payment link via Razorpay (${razorpayScore}% deliverability). Delivers branded checkout with auto-retry and multi-rail support (NetBanking, Wallets, UPI).`,
+    engine_source: "rule_based",
   });
 
   // 3. UPI Collect Request
@@ -78,6 +85,7 @@ export function rankCollectionMethods(
     is_real: false,
     risk_level: collectScore >= 80 ? "LOW" : "MODERATE",
     reason: `Direct VPA pull request to customer's linked mobile number (${collectScore}% response rate). Depends on user accepting payment notification within mandate window.`,
+    engine_source: "rule_based",
   });
 
   // 4. Account + IFSC QR (Flagged High-Risk)
@@ -92,6 +100,7 @@ export function rankCollectionMethods(
     risk_level: "HIGH",
     reason: `Account+IFSC QR faces ${u16RejectionPct}% NPCI U16 rejection rate at ${profile.bank_name} ("Risk threshold exceeded"). High risk of silent in-store failure; used only as fallback.`,
     warning: `High U16 rejection frequency (${u16RejectionPct}%) on this bank's switch.`,
+    engine_source: "rule_based",
   });
 
   // Sort by confidence score descending
@@ -104,15 +113,57 @@ export function rankCollectionMethods(
   }));
 }
 
-export function evaluateDecision(context: RequestContext) {
+/**
+ * Main ranking function: attempts real LLM reasoning via Anthropic Claude first.
+ * If Claude is unavailable or fails, gracefully cascades to deterministic rule-based ranking.
+ */
+export async function rankCollectionMethods(
+  bankProfile: BankRiskProfile | undefined,
+  context: RequestContext
+): Promise<RailRanking[]> {
+  const profile: BankRiskProfile = bankProfile || {
+    ifsc_prefix: context.ifsc.substring(0, 4).toUpperCase(),
+    bank_name: `${context.ifsc.substring(0, 4).toUpperCase()} Bank`,
+    bank_type: "PSU",
+    u16_risk_score: 0.75,
+    aadhaar_otp_supported: true,
+    aadhaar_otp_success_rate: 0.70,
+    upi_collect_success_rate: 0.75,
+    payment_link_success_rate: 0.96,
+    total_attempts: 10,
+    successful_attempts: 7,
+    account_digits_min: 9,
+    account_digits_max: 18,
+    updated_at: new Date().toISOString(),
+  };
+
+  try {
+    const recentHistory = getRecentAttemptsForBank(profile.ifsc_prefix, 5);
+    const aiRankings = await reasonAboutRails(profile, context, recentHistory);
+    return aiRankings;
+  } catch (err) {
+    console.info(
+      `[AI Reasoner] Fallback to deterministic model: ${
+        err instanceof Error ? err.message : "API unavailable"
+      }`
+    );
+    return rankCollectionMethodsDeterministic(profile, context);
+  }
+}
+
+export async function evaluateDecision(context: RequestContext) {
   const prefix = context.ifsc.substring(0, 4).toUpperCase();
   const bankProfile = getBankProfile(prefix);
-  const rankings = rankCollectionMethods(bankProfile, context);
+  const rankings = await rankCollectionMethods(bankProfile, context);
+  const isAiReasoned = rankings.some((r) => r.engine_source === "ai_reasoned");
 
   return {
     bankProfile,
     rankings,
     topRecommendation: rankings[0],
-    explanationSummary: `Selected ${rankings[0].name} as primary rail for ${bankProfile?.bank_name || prefix} with ${rankings[0].confidence_score}% predicted success. Remaining rails queued for automated fallback.`,
+    isAiReasoned,
+    explanationSummary: isAiReasoned
+      ? `Claude Sonnet evaluated ${bankProfile?.bank_name || prefix} risk profile & history: Recommends ${rankings[0].name} (${rankings[0].confidence_score}% confidence). Remaining rails queued for smart fallback.`
+      : `Selected ${rankings[0].name} as primary rail for ${bankProfile?.bank_name || prefix} with ${rankings[0].confidence_score}% predicted success (Rule-based model). Remaining rails queued for automated fallback.`,
   };
 }

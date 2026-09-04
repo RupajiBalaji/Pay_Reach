@@ -46,6 +46,7 @@ export interface RailRanking {
   reason: string;
   risk_level: "LOW" | "MODERATE" | "HIGH";
   warning?: string;
+  engine_source?: "ai_reasoned" | "rule_based";
 }
 
 export interface RailAttempt {

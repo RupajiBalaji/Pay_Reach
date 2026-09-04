@@ -13,7 +13,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const decision = evaluateDecision({
+    const decision = await evaluateDecision({
       accountNumber: accountNumber || "0000000000",
       ifsc,
       phoneNumber: phoneNumber || "9876543210",

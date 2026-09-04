@@ -90,7 +90,7 @@ export async function executePaymentCollection(params: {
   });
 
   // 3. AI Decision Engine: Rank Collection Methods
-  const decision = evaluateDecision({
+  const decision = await evaluateDecision({
     accountNumber: params.accountNumber,
     ifsc: params.ifsc,
     phoneNumber: params.phoneNumber,
@@ -101,9 +101,17 @@ export async function executePaymentCollection(params: {
     id: `aud_${Date.now()}_2`,
     request_id: requestId,
     stage: "RANKING",
-    title: "AI Decision Engine Evaluated Rails",
-    details: `Ranked 4 available payment rails based on learned historical risk for ${initialProfile.bank_name}. Top recommendation: ${decision.topRecommendation.name} (${decision.topRecommendation.confidence_score}% confidence).`,
-    metadata: { rankings: decision.rankings },
+    title: decision.isAiReasoned
+      ? "AI Decision Engine (Claude Sonnet) Evaluated Rails"
+      : "Decision Engine (Rule-Based Fallback) Evaluated Rails",
+    details: `${
+      decision.isAiReasoned
+        ? "Anthropic Claude evaluated bank risk metrics & real attempt history."
+        : "Evaluated rails via deterministic risk rules."
+    } Top recommendation: ${decision.topRecommendation.name} (${decision.topRecommendation.confidence_score}% confidence). Engine: ${
+      decision.isAiReasoned ? "AI-reasoned" : "Rule-based fallback"
+    }.`,
+    metadata: { rankings: decision.rankings, isAiReasoned: decision.isAiReasoned },
     timestamp: new Date().toISOString(),
   });
 

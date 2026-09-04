@@ -65,10 +65,10 @@ All simulated rails are cleanly isolated behind a common `RailAdapter` interface
 | Component | Status | Location | Implementation Details |
 | :--- | :--- | :--- | :--- |
 | **Razorpay Payment Links** | **REAL INTEGRATION** | `/lib/rails/razorpay.ts` | Dispatches live HTTP requests to `https://api.razorpay.com/v1/payment_links` via Basic Auth. Generates actual workable payment links. |
+| **AI Decision Engine** | **REAL INTEGRATION** | `/lib/ai-reasoner.ts` | Calls Anthropic Claude API (`claude-sonnet-4-6`) for per-bank rail ranking and reasoning, with deterministic fallback if the API is unavailable. |
 | **Aadhaar-OTP UPI Activation** | **SIMULATED** | `/lib/rails/aadhaar-otp.ts` | Simulates UIDAI Aadhaar-bank link verification and OTP challenge dispatch, weighted by bank's stored profile. |
 | **UPI Collect Request** | **SIMULATED** | `/lib/rails/upi-collect.ts` | Simulates pushing collect notifications to the user's mobile VPA with realistic PSP response and timeout rates. |
 | **Account+IFSC QR Code** | **SIMULATED** | `/lib/rails/account-ifsc-qr.ts` | Generates standard NPCI UPI URI strings and simulates realistic bank switch rejections under NPCI Error `U16`. |
-| **AI Decision Engine** | **LIVE LOGIC** | `/lib/decision-engine.ts` | Dynamically ranks rails and generates natural-language explainability rationales per bank profile. |
 | **Adaptive Learning** | **LIVE LOGIC** | `/lib/orchestrator.ts` | Updates stored bank confidence scores after every transaction using a Bayesian-weighted moving average. |
 
 ---
@@ -109,9 +109,10 @@ cd payreach
 # Install dependencies
 npm install
 
-# (Optional) Add your Razorpay Test Mode credentials in .env.local
-# If omitted, PayReach will gracefully generate authentic test link previews
-echo "RAZORPAY_KEY_ID=rzp_test_your_key_id" > .env.local
+# (Optional) Add your API credentials in .env.local
+# If omitted, PayReach will gracefully use deterministic rule-based ranking and authentic test link previews
+echo "ANTHROPIC_API_KEY=your_claude_api_key" > .env.local
+echo "RAZORPAY_KEY_ID=rzp_test_your_key_id" >> .env.local
 echo "RAZORPAY_KEY_SECRET=your_key_secret" >> .env.local
 
 # Run the database test

@@ -402,8 +402,17 @@ export function CollectionForm() {
                     <Sparkles className="w-5 h-5 text-purple-400" />
                     AI Decision Engine: Pre-Ranked Strategy
                   </h3>
-                  <span className="px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-purple-500/10 text-purple-300 border border-purple-500/20">
-                    Active Risk Model
+                  <span
+                    className={`px-2.5 py-0.5 rounded-full text-[11px] font-semibold border flex items-center gap-1.5 ${
+                      rankings.some((r) => r.engine_source === "ai_reasoned")
+                        ? "bg-indigo-500/15 text-indigo-300 border-indigo-500/30"
+                        : "bg-slate-800 text-slate-300 border-slate-700"
+                    }`}
+                  >
+                    <Sparkles className="w-3 h-3 text-indigo-400" />
+                    {rankings.some((r) => r.engine_source === "ai_reasoned")
+                      ? "Claude Sonnet AI-Reasoned"
+                      : "Rule-Based Fallback"}
                   </span>
                 </div>
                 <p className="text-xs text-slate-400 mt-1">
@@ -443,6 +452,17 @@ export function CollectionForm() {
                           ) : (
                             <span className="px-2 py-0.5 rounded text-[10px] font-medium bg-slate-800 text-slate-400 border border-slate-700">
                               SIMULATED
+                            </span>
+                          )}
+
+                          {rail.engine_source === "ai_reasoned" ? (
+                            <span className="px-2 py-0.5 rounded text-[10px] font-semibold bg-indigo-500/15 text-indigo-300 border border-indigo-500/30 flex items-center gap-1">
+                              <Sparkles className="w-2.5 h-2.5 text-indigo-400" />
+                              AI-reasoned
+                            </span>
+                          ) : (
+                            <span className="px-2 py-0.5 rounded text-[10px] font-medium bg-slate-850 text-slate-400 border border-slate-750">
+                              Rule-based fallback
                             </span>
                           )}
                         </div>

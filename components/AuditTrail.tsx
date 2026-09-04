@@ -189,6 +189,17 @@ export function AuditTrail({
                         {event.rail_method === "razorpay_link" ? "REAL GATEWAY" : "SIMULATED RAIL"}
                       </span>
                     )}
+
+                    {event.stage === "RANKING" && (
+                      <span className={`px-2 py-0.5 rounded text-[10px] font-semibold border flex items-center gap-1 ${
+                        event.metadata?.isAiReasoned
+                          ? "bg-indigo-500/15 text-indigo-300 border-indigo-500/30"
+                          : "bg-amber-500/15 text-amber-300 border-amber-500/30"
+                      }`}>
+                        <Sparkles className="w-3 h-3" />
+                        {event.metadata?.isAiReasoned ? "AI-reasoned" : "Rule-based fallback"}
+                      </span>
+                    )}
                   </div>
 
                   <span className="text-xs text-slate-500 font-mono">

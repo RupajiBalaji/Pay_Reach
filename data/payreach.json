@@ -9,11 +9,11 @@
       "aadhaar_otp_success_rate": 0.82,
       "upi_collect_success_rate": 0.76,
       "payment_link_success_rate": 0.98,
-      "total_attempts": 144,
-      "successful_attempts": 122,
+      "total_attempts": 145,
+      "successful_attempts": 123,
       "account_digits_min": 11,
       "account_digits_max": 11,
-      "updated_at": "2026-09-04T16:07:47.448Z"
+      "updated_at": "2026-09-04T18:31:38.304Z"
     },
     {
       "ifsc_prefix": "PUNB",

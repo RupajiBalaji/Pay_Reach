@@ -36,3 +36,5 @@ next-env.d.ts
 # data
 data/*.db
 data/*.sqlite
+data/payreach.json
+data/*.tmp

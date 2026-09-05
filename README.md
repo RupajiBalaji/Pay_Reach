@@ -71,6 +71,11 @@ All simulated rails are cleanly isolated behind a common `RailAdapter` interface
 | **Account+IFSC QR Code** | **SIMULATED** | `/lib/rails/account-ifsc-qr.ts` | Generates standard NPCI UPI URI strings and simulates realistic bank switch rejections under NPCI Error `U16`. |
 | **Adaptive Learning** | **LIVE LOGIC** | `/lib/orchestrator.ts` | Updates stored bank confidence scores after every transaction using a Bayesian-weighted moving average. |
 
+> **Storage Architecture & Serverless (Vercel) Deployment Note:**
+> - Baseline bank risk profiles are stored in `data/seed.json` (tracked in git) ensuring 100% reproducible benchmarks.
+> - In serverless environments (e.g., Vercel), runtime state and transaction logs write to `/tmp/payreach.json` (or memory cache) to respect read-only container filesystems.
+> - **Honest Caveat:** Container `/tmp` storage in Vercel is per-instance and ephemeral across cold starts. The Bayesian model updates live for the duration of that instance, while local development maintains full persistent disk storage.
+
 ---
 
 ## 4. Multi-Bank Batch Benchmark

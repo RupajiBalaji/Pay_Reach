@@ -9,8 +9,11 @@ interface DbSchema {
   audit_log: AuditEvent[];
 }
 
-const DATA_DIR = path.join(process.cwd(), "data");
+// Detect Vercel / serverless environment for writable storage
+const isVercel = Boolean(process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME);
+const DATA_DIR = isVercel ? "/tmp" : path.join(process.cwd(), "data");
 const DB_FILE = path.join(DATA_DIR, "payreach.json");
+const SEED_FILE = path.join(process.cwd(), "data", "seed.json");
 
 export const SEED_BANK_PROFILES: BankRiskProfile[] = [
   {
@@ -315,52 +318,86 @@ export const SEED_BANK_PROFILES: BankRiskProfile[] = [
   }
 ];
 
-function ensureDb(): DbSchema {
-  if (!fs.existsSync(DATA_DIR)) {
-    fs.mkdirSync(DATA_DIR, { recursive: true });
+let memoryCache: DbSchema | null = null;
+
+function loadSeedData(): DbSchema {
+  try {
+    if (fs.existsSync(SEED_FILE)) {
+      const raw = fs.readFileSync(SEED_FILE, "utf-8");
+      const parsed = JSON.parse(raw) as DbSchema;
+      if (parsed.bank_risk_profiles && parsed.bank_risk_profiles.length > 0) {
+        return {
+          bank_risk_profiles: parsed.bank_risk_profiles,
+          requests: parsed.requests || [],
+          attempts: parsed.attempts || [],
+          audit_log: parsed.audit_log || [],
+        };
+      }
+    }
+  } catch (err) {
+    console.warn("[DB] Failed reading seed.json, falling back to SEED_BANK_PROFILES", err);
   }
 
-  if (!fs.existsSync(DB_FILE)) {
-    const initialData: DbSchema = {
-      bank_risk_profiles: SEED_BANK_PROFILES,
-      requests: [],
-      attempts: [],
-      audit_log: [],
-    };
-    fs.writeFileSync(DB_FILE, JSON.stringify(initialData, null, 2), "utf-8");
-    return initialData;
+  return {
+    bank_risk_profiles: SEED_BANK_PROFILES,
+    requests: [],
+    attempts: [],
+    audit_log: [],
+  };
+}
+
+function ensureDb(): DbSchema {
+  if (memoryCache) {
+    return memoryCache;
   }
 
   try {
+    if (!fs.existsSync(DATA_DIR)) {
+      fs.mkdirSync(DATA_DIR, { recursive: true });
+    }
+
+    if (!fs.existsSync(DB_FILE)) {
+      const initialData = loadSeedData();
+      try {
+        fs.writeFileSync(DB_FILE, JSON.stringify(initialData, null, 2), "utf-8");
+      } catch (e) {
+        console.warn("[DB] Could not write initial DB_FILE to disk, operating with in-memory state:", e);
+      }
+      memoryCache = initialData;
+      return initialData;
+    }
+
     const raw = fs.readFileSync(DB_FILE, "utf-8");
     const parsed = JSON.parse(raw) as DbSchema;
-    // ensure all tables exist
     if (!parsed.bank_risk_profiles || parsed.bank_risk_profiles.length === 0) {
       parsed.bank_risk_profiles = SEED_BANK_PROFILES;
     }
     if (!parsed.requests) parsed.requests = [];
     if (!parsed.attempts) parsed.attempts = [];
     if (!parsed.audit_log) parsed.audit_log = [];
+
+    memoryCache = parsed;
     return parsed;
-  } catch {
-    const initialData: DbSchema = {
-      bank_risk_profiles: SEED_BANK_PROFILES,
-      requests: [],
-      attempts: [],
-      audit_log: [],
-    };
-    fs.writeFileSync(DB_FILE, JSON.stringify(initialData, null, 2), "utf-8");
+  } catch (err) {
+    console.warn("[DB] Error loading DB_FILE, loading seed data:", err);
+    const initialData = loadSeedData();
+    memoryCache = initialData;
     return initialData;
   }
 }
 
 function saveDb(data: DbSchema): void {
-  if (!fs.existsSync(DATA_DIR)) {
-    fs.mkdirSync(DATA_DIR, { recursive: true });
+  memoryCache = data;
+  try {
+    if (!fs.existsSync(DATA_DIR)) {
+      fs.mkdirSync(DATA_DIR, { recursive: true });
+    }
+    const tempFile = `${DB_FILE}.tmp`;
+    fs.writeFileSync(tempFile, JSON.stringify(data, null, 2), "utf-8");
+    fs.renameSync(tempFile, DB_FILE);
+  } catch (err) {
+    console.warn("[DB] File persistence failed or read-only (safe in serverless environments):", err);
   }
-  const tempFile = `${DB_FILE}.tmp`;
-  fs.writeFileSync(tempFile, JSON.stringify(data, null, 2), "utf-8");
-  fs.renameSync(tempFile, DB_FILE);
 }
 
 // Bank Profiles

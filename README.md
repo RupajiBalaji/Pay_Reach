@@ -65,7 +65,7 @@ All simulated rails are cleanly isolated behind a common `RailAdapter` interface
 | Component | Status | Location | Implementation Details |
 | :--- | :--- | :--- | :--- |
 | **Razorpay Payment Links** | **REAL INTEGRATION** | `/lib/rails/razorpay.ts` | Dispatches live HTTP requests to `https://api.razorpay.com/v1/payment_links` via Basic Auth. Generates actual workable payment links. |
-| **AI Decision Engine** | **REAL INTEGRATION** | `/lib/ai-reasoner.ts` | Calls Anthropic Claude API (`claude-sonnet-4-6`) for per-bank rail ranking and reasoning, with deterministic fallback if the API is unavailable. |
+| **AI Decision Engine** | **REAL INTEGRATION** | `/lib/ai-reasoner.ts` | Calls Google Gemini API (`gemini-2.5-flash` / `gemini-3.6-flash`) with rotational key management and model failover for per-bank rail ranking and reasoning, with deterministic fallback if the API is unavailable. |
 | **Aadhaar-OTP UPI Activation** | **SIMULATED** | `/lib/rails/aadhaar-otp.ts` | Simulates UIDAI Aadhaar-bank link verification and OTP challenge dispatch, weighted by bank's stored profile. |
 | **UPI Collect Request** | **SIMULATED** | `/lib/rails/upi-collect.ts` | Simulates pushing collect notifications to the user's mobile VPA with realistic PSP response and timeout rates. |
 | **Account+IFSC QR Code** | **SIMULATED** | `/lib/rails/account-ifsc-qr.ts` | Generates standard NPCI UPI URI strings and simulates realistic bank switch rejections under NPCI Error `U16`. |
@@ -79,6 +79,7 @@ PayReach includes a built-in empirical testing engine (`/api/batch-test` and the
 - **Recharts Data Visualization:** Visualizes success rates across diverse PSU vs Private banks.
 - **U16 Avoidance Metric:** Demonstrates the exact count of silent switch rejections avoided and rescued by automated fallback.
 - **Winning Rail Distribution:** Details which collection method sealed the transaction.
+- **In-Memory Batch Caching:** Repeated synthetic requests for the same bank within a batch run reuse the initial Gemini AI decision ranking, conserving rate limits while showcasing full multi-bank diversity.
 
 ---
 
@@ -110,8 +111,9 @@ cd payreach
 npm install
 
 # (Optional) Add your API credentials in .env.local
+# Get a free Google Gemini key at: https://aistudio.google.com/apikey
 # If omitted, PayReach will gracefully use deterministic rule-based ranking and authentic test link previews
-echo "ANTHROPIC_API_KEY=your_claude_api_key" > .env.local
+echo "GEMINI_API_KEY=your_gemini_api_key" > .env.local
 echo "RAZORPAY_KEY_ID=rzp_test_your_key_id" >> .env.local
 echo "RAZORPAY_KEY_SECRET=your_key_secret" >> .env.local
 

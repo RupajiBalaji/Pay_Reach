@@ -411,7 +411,7 @@ export function CollectionForm() {
                   >
                     <Sparkles className="w-3 h-3 text-indigo-400" />
                     {rankings.some((r) => r.engine_source === "ai_reasoned")
-                      ? "Claude Sonnet AI-Reasoned"
+                      ? "Gemini AI-Reasoned"
                       : "Rule-Based Fallback"}
                   </span>
                 </div>

@@ -35,6 +35,7 @@ export async function executePaymentCollection(params: {
   amount: number;
   customerName?: string;
   note?: string;
+  precomputedDecision?: Awaited<ReturnType<typeof evaluateDecision>>;
 }): Promise<ExecutionTrace> {
   const startTime = Date.now();
   const requestId = `req_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
@@ -90,23 +91,23 @@ export async function executePaymentCollection(params: {
   });
 
   // 3. AI Decision Engine: Rank Collection Methods
-  const decision = await evaluateDecision({
+  const decision = params.precomputedDecision || (await evaluateDecision({
     accountNumber: params.accountNumber,
     ifsc: params.ifsc,
     phoneNumber: params.phoneNumber,
     amount: params.amount,
-  });
+  }));
 
   createAuditEvent({
     id: `aud_${Date.now()}_2`,
     request_id: requestId,
     stage: "RANKING",
     title: decision.isAiReasoned
-      ? "AI Decision Engine (Claude Sonnet) Evaluated Rails"
+      ? "AI Decision Engine (Google Gemini) Evaluated Rails"
       : "Decision Engine (Rule-Based Fallback) Evaluated Rails",
     details: `${
       decision.isAiReasoned
-        ? "Anthropic Claude evaluated bank risk metrics & real attempt history."
+        ? "Google Gemini AI evaluated bank risk metrics & real attempt history."
         : "Evaluated rails via deterministic risk rules."
     } Top recommendation: ${decision.topRecommendation.name} (${decision.topRecommendation.confidence_score}% confidence). Engine: ${
       decision.isAiReasoned ? "AI-reasoned" : "Rule-based fallback"

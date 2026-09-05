@@ -114,8 +114,8 @@ export function rankCollectionMethodsDeterministic(
 }
 
 /**
- * Main ranking function: attempts real LLM reasoning via Anthropic Claude first.
- * If Claude is unavailable or fails, gracefully cascades to deterministic rule-based ranking.
+ * Main ranking function: attempts real LLM reasoning via Google Gemini API first (with rotational keys and models).
+ * If Gemini is unavailable or fails, gracefully cascades to deterministic rule-based ranking.
  */
 export async function rankCollectionMethods(
   bankProfile: BankRiskProfile | undefined,
@@ -163,7 +163,7 @@ export async function evaluateDecision(context: RequestContext) {
     topRecommendation: rankings[0],
     isAiReasoned,
     explanationSummary: isAiReasoned
-      ? `Claude Sonnet evaluated ${bankProfile?.bank_name || prefix} risk profile & history: Recommends ${rankings[0].name} (${rankings[0].confidence_score}% confidence). Remaining rails queued for smart fallback.`
+      ? `Google Gemini AI evaluated ${bankProfile?.bank_name || prefix} risk profile & history: Recommends ${rankings[0].name} (${rankings[0].confidence_score}% confidence). Remaining rails queued for smart fallback.`
       : `Selected ${rankings[0].name} as primary rail for ${bankProfile?.bank_name || prefix} with ${rankings[0].confidence_score}% predicted success (Rule-based model). Remaining rails queued for automated fallback.`,
   };
 }

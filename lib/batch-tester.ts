@@ -1,5 +1,6 @@
 import { getAllBankProfiles } from "./db";
 import { executePaymentCollection, ExecutionTrace } from "./orchestrator";
+import { evaluateDecision } from "./decision-engine";
 import { RailMethod } from "./types";
 
 export interface BankBatchStat {
@@ -102,6 +103,12 @@ export async function runBatchTest(batchSize: number = 50): Promise<BatchTestSum
     };
   });
 
+  // IN-MEMORY BATCH CACHE:
+  // To respect Gemini API free-tier rate limits and prevent quota exhaustion during 50+ request batch benchmark runs,
+  // we maintain an in-memory cache of the AI decision ranking keyed by bank IFSC prefix within this batch run.
+  // Repeated synthetic requests for the same bank reuse the initial Gemini AI ranking instead of making 50 redundant LLM calls.
+  const batchAiDecisionCache = new Map<string, Awaited<ReturnType<typeof evaluateDecision>>>();
+
   // Run synthetic batch
   for (let i = 0; i < batchSize; i++) {
     const bank = getRandomItem(bankProfiles);
@@ -112,6 +119,18 @@ export async function runBatchTest(batchSize: number = 50): Promise<BatchTestSum
     const name = `${getRandomItem(FIRST_NAMES)} ${getRandomItem(LAST_NAMES)}`;
     const amount = Math.floor(100 + Math.random() * 1500);
 
+    // Reuse cached AI ranking if already evaluated for this bank in this batch run
+    let precomputedDecision = batchAiDecisionCache.get(bank.ifsc_prefix);
+    if (!precomputedDecision) {
+      precomputedDecision = await evaluateDecision({
+        accountNumber: acct,
+        ifsc,
+        phoneNumber: phone,
+        amount,
+      });
+      batchAiDecisionCache.set(bank.ifsc_prefix, precomputedDecision);
+    }
+
     const trace = await executePaymentCollection({
       accountNumber: acct,
       ifsc,
@@ -119,6 +138,7 @@ export async function runBatchTest(batchSize: number = 50): Promise<BatchTestSum
       amount,
       customerName: name,
       note: "Batch test transaction",
+      precomputedDecision,
     });
 
     traces.push(trace);

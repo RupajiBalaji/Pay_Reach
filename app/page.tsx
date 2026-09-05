@@ -21,11 +21,7 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col selection:bg-blue-600 selection:text-white">
-      {/* Top Notification Bar */}
-      <div className="bg-gradient-to-r from-blue-900/60 via-indigo-900/60 to-purple-900/60 border-b border-blue-500/20 px-4 py-2 text-center text-xs text-blue-200">
-        <span className="font-semibold text-white">Razorpay Buildathon 2026 — Open Track:</span>{" "}
-        AI decision-layer solving silent NPCI U16 collection failure for card-less bank users.
-      </div>
+
 
       {/* Main Header */}
       <header className="border-b border-slate-850 bg-slate-950/80 backdrop-blur sticky top-0 z-40">

@@ -15,12 +15,12 @@ interface AiRailOutput {
   reason: string;
 }
 
-// Rotational Models: starts with gemini-2.5-flash per prompt spec, rotating to high-capacity lightweight flash models
+// Rotational Models: starts with high-capacity fast models (gemini-3.5-flash-lite, gemini-3.1-flash-lite), rotating across available Gemini tiers
 const ROTATIONAL_MODELS: string[] = [
-  "gemini-2.5-flash",
   "gemini-3.5-flash-lite",
   "gemini-3.1-flash-lite",
   "gemini-3.6-flash",
+  "gemini-2.5-flash",
   "gemini-flash-latest",
 ];
 

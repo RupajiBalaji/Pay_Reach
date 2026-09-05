@@ -11,7 +11,7 @@ export interface RequestContext {
 
 /**
  * Deterministic fallback scoring algorithm based on stored bank risk metrics.
- * Used whenever ANTHROPIC_API_KEY is unset or the LLM call times out/fails.
+ * Used whenever GEMINI_API_KEY is unset or the LLM call times out/fails.
  */
 export function rankCollectionMethodsDeterministic(
   bankProfile: BankRiskProfile | undefined,

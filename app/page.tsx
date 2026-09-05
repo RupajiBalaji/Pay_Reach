@@ -3,6 +3,7 @@
 import React, { useState } from "react";
 import { CollectionForm } from "@/components/CollectionForm";
 import { BatchAnalytics } from "@/components/BatchAnalytics";
+import { DEMO_BATCH_DATA } from "@/lib/demo-batch-data";
 import { 
   Sparkles, 
   BarChart3, 
@@ -106,7 +107,7 @@ export default function Home() {
       {/* Main Content Area */}
       <main className="flex-1 max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-8">
         {activeTab === "agent" && <CollectionForm />}
-        {activeTab === "batch" && <BatchAnalytics />}
+        {activeTab === "batch" && <BatchAnalytics initialData={DEMO_BATCH_DATA} />}
       </main>
 
       {/* Footer */}

@@ -2,6 +2,7 @@
 
 import React, { useState } from "react";
 import { BatchTestSummary } from "@/lib/batch-tester";
+import { DEMO_BATCH_DATA } from "@/lib/demo-batch-data";
 import {
   BarChart,
   Bar,
@@ -30,7 +31,9 @@ interface BatchAnalyticsProps {
 }
 
 export function BatchAnalytics({ initialData }: BatchAnalyticsProps) {
-  const [data, setData] = useState<BatchTestSummary | null>(initialData || null);
+  const [data, setData] = useState<BatchTestSummary | null>(
+    initialData !== undefined ? initialData : DEMO_BATCH_DATA
+  );
   const [loading, setLoading] = useState(false);
   const [batchCount, setBatchCount] = useState(50);
   const [error, setError] = useState<string | null>(null);
@@ -106,6 +109,21 @@ export function BatchAnalytics({ initialData }: BatchAnalyticsProps) {
                 </>
               )}
             </button>
+
+            {data !== DEMO_BATCH_DATA && (
+              <button
+                onClick={() => {
+                  setData(DEMO_BATCH_DATA);
+                  setError(null);
+                }}
+                disabled={loading}
+                className="inline-flex items-center gap-1.5 px-4 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white font-medium text-xs rounded-xl border border-slate-700 transition-all"
+                title="Reset to the baseline 50-request benchmark dataset"
+              >
+                <RotateCcw className="w-3.5 h-3.5" />
+                Reset to Demo Data
+              </button>
+            )}
           </div>
         </div>
 
